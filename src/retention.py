@@ -27,6 +27,18 @@ def cohort_triangle(customers, cutoff=24, horizon=24):
     return status.groupby(customers["signup_month"]).mean()
 
 
+def person_month(customers):
+    """Expand to one row per customer per month at risk (month = 1 .. months_observed).
+
+    event = 1 only in the month the customer churned. This is the input for
+    discrete-time hazard models (one binary outcome per customer-month).
+    """
+    pm = customers.loc[customers.index.repeat(customers["months_observed"])].copy()
+    pm["month"] = pm.groupby("customer_id").cumcount() + 1
+    pm["event"] = ((pm["month"] == pm["months_observed"]) & (pm["churned"] == 1)).astype(int)
+    return pm.reset_index(drop=True)
+
+
 def retention_curve(customers, cutoff=24, horizon=24, method="pooled"):
     """Blended retention by tenure with counts and a 95% binomial interval.
 
